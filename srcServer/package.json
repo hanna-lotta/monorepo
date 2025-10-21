@@ -1,0 +1,18 @@
+{
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.913.0",
+    "@aws-sdk/lib-dynamodb": "^3.913.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "react-router": "^7.9.4",
+    "zod": "^4.1.12",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "typescript": "^5.9.3"
+  }
+}
