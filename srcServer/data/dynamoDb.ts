@@ -6,7 +6,7 @@ const accessKey: string = process.env.ACCESS_KEY || ''
 const secret: string = process.env.SECRET_ACCESS_KEY || ''
 
 const client: DynamoDBClient = new DynamoDBClient({
-	region: "eu-north-1",  // se till att använda den region som du använder för DynamoDB
+	region: "eu-north-1",  
 	credentials: {
 		accessKeyId: accessKey,
 		secretAccessKey: secret,
@@ -14,6 +14,6 @@ const client: DynamoDBClient = new DynamoDBClient({
 });
 const db: DynamoDBDocumentClient = DynamoDBDocumentClient.from(client);
 
-const tableName = 'jwt'
+const tableName = 'Monorepo'
 
 export { db, tableName }

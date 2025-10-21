@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import './App.css'
-import { AuthSchema } from './data/validation'
+//import { AuthSchema } from './data/validation'
 
 interface FormData {
 	username: string
 	password: string
 }
-
+/*
 interface UserResponse {
 	username: string
 	userId: string
@@ -15,11 +15,11 @@ interface Touched {
 	username: boolean
 	password: boolean
 }
-
+*/
 function App() {
   const [formData, setFormData] = useState<FormData>({username: '', password: ''})
-  const [authErrorMessage, setAuthErrorMessage] = useState<string>('')
-  const [users, setUsers] = useState<UserResponse[]>([])
+  //const [authErrorMessage, setAuthErrorMessage] = useState<string>('')
+  //const [users, setUsers] = useState<UserResponse[]>([])
   //const [touched, setTouched] = useState<Touched>({username: false, password: false}) //TODO gör färdigt
 
   return (
