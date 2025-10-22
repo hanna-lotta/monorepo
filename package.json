@@ -29,6 +29,7 @@
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.3",
     "@types/node": "^24.6.0",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
