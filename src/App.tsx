@@ -1,23 +1,25 @@
 import './App.css'
-import { NavLink, Outlet } from 'react-router'
-import Login from './pages/Login'
-import Chappy from './pages/Chappy'
+import { NavLink, Outlet,  } from 'react-router'
 
-
+//handleGetUsers()
+//TODO fixa zustand och gör handleGetUsers till en funktion så att den kan användas globalt
 
 function App() {
-  
   return (
-    <>
-		<h1>Monorepo</h1>
+	<>
+	  <header className='nav'>
+		<h1 className='appName'>CHAPPY</h1>
 		<nav className='links'>
 			<NavLink to="/">Login</NavLink>
 			<NavLink to="/chappy/">Chappy</NavLink>
+			<h4 style={{ paddingRight: "10px" }}>HANNA</h4>
+			{/* {user.username} */} 
 		</nav>
-		<main>
-			<Outlet />
-		</main>
-    </>
+		</header>
+	  <main>
+		<Outlet />
+	  </main>
+	</>
   )
 }
 

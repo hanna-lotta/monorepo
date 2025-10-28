@@ -1,17 +1,14 @@
 import { useState } from 'react'
 import '../App.css'
 import { AuthSchema, RegisterResponseSchema } from '../data/validation'
+import { useNavigate } from 'react-router'
 
-//dubbel_flytta
+//dubbel?_flytta
 interface FormData {
 	username: string
 	password: string
 }
 /*
-interface UserResponse {
-	username: string
-	userId: string
-}
 interface Touched {
 	username: boolean
 	password: boolean
@@ -22,17 +19,19 @@ interface Touched {
 const Login = () => {
 	const [formData, setFormData] = useState<FormData>({username: '', password: ''})
 	  //const [authErrorMessage, setAuthErrorMessage] = useState<string>('')
-	  //const [users, setUsers] = useState<UserResponse[]>([])
+	  
 	  //const [touched, setTouched] = useState<Touched>({username: false, password: false}) 
 	  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-	
-			const LS_KEY = 'jwt'
-	
-				const handleGetUsers = () => {
-				// TODO: fetch users and update state
-				console.log('Fetching users...')
-			}
-	
+
+	  const navigate = useNavigate();
+
+	  const handleGoToChappy = () => {
+		navigate('/chappy/');
+	  }
+
+	  const LS_KEY = 'jwt'
+
+
 				const handleSubmitLogin = async () => {
 					setErrorMessage(null)
 					const localValidate = AuthSchema.safeParse(formData)
@@ -61,7 +60,7 @@ const Login = () => {
 							return
 						}
 						localStorage.setItem(LS_KEY, jwt)
-						handleGetUsers()
+						//handleGetUsers()
 					} else {
 						setErrorMessage('Login failed')
 					}
@@ -105,7 +104,7 @@ const Login = () => {
 				// uppdatera listan med användare:
 				// Alt. 1: skicka nytt request till servern (som om man klickar på knappen "Visa alla användare")
 				// Alt. 2: uppdatera state-variabeln direkt <- går inte, eftersom vi inte har userId
-				handleGetUsers()  // alt. 1
+				//handleGetUsers()  // alt. 1
 				// TODO: rensa formuläret, så man inte reggar samma användare igen
 			} else {
 				setErrorMessage('Registration failed')
@@ -136,6 +135,7 @@ const Login = () => {
 				
 				<button className='loginbutton' type="submit">Logga in</button>
 				<button className='registerbutton' type="button" onClick={handleSubmitRegister}>Registrera</button>
+				<button className='guestbutton' onClick={handleGoToChappy}>Besök Chappy som gäst</button>
 				{errorMessage && <p className='error'>{errorMessage}</p>}
 			</form>
 		</div>

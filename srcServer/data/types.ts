@@ -15,3 +15,8 @@ export interface JwtResponse {
 	success: boolean;
 	token?: string;  // JWT
 }
+export interface CreateDmBody {
+  message: string;
+  senderId: string;
+  recieverId: string; 
+}

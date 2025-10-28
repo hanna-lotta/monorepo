@@ -6,6 +6,7 @@ import { ItemsSchema, registerSchema } from '../auth/validation.js';
 import { QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { db, tableName } from '../data/dynamoDb.js';
 import { compare } from 'bcrypt'
+import { log } from 'console';
 
 
 const router: Router = express.Router();
@@ -50,6 +51,7 @@ router.post('/', async (req: Request<{}, JwtResponse, UserBody>, res: Response<J
 	const userId = user.sk.split('#')[1]
 	const token: string = createToken(userId)
 	res.send({ success: true, token: token })
+	log('User logged in:', user.username);
 });
 
 

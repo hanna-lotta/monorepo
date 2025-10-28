@@ -20,6 +20,7 @@ export const ItemSchema = z.object({
   username: z.string(),
   password: z.string(),
   accesLevel: z.string(),
+  //isLoggedIn: z.boolean(),
 })
 
 export const ItemsSchema = z.array(ItemSchema)

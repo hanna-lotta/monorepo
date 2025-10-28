@@ -8,7 +8,7 @@ import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { JwtResponse, UserBody } from '../data/types.js';
 
 const router: Router = express.Router();
-
+//TODO lägg till errormessage-interface
 
 router.post('/', async (req: Request<{}, JwtResponse, UserBody>, res: Response<JwtResponse | { error: string }>) => {
 	//validera body

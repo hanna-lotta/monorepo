@@ -49,6 +49,11 @@
 	background-color: rgb(99, 167, 160);
 	margin-bottom: 0.5em;
 }
+.guestbutton {
+	border: 1px solid grey;
+	background-color: rgb(99, 167, 160);
+	margin-bottom: 0.5em;
+}s
 .mustHave {
 	font-size: 0.9em;
 	align-self: flex-start;
@@ -56,4 +61,113 @@
 }
 h2 {
 	padding-top: 1em;
+}
+#getUsersButton {
+	background-color: rgb(241, 162, 35);
+}
+.allUsers {
+	border: 1px solid grey;
+	margin: 0.3em;
+	padding: 0.3em;
+	background-color: rgb(214, 214, 116);
+	list-style: none;
+	display: flex;
+    flex-direction: column;
+}
+ul {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  align-items: stretch;
+  justify-content: center;
+  border: 1px solid grey;
+  flex-grow: 1;
+  padding-left: 0;
+  margin: 0;
+}
+.nav {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	padding-bottom: 0.5em;
+	background-color: #AE7F7F;
+}
+.links {
+	display: flex;
+	flex-direction: row;
+	gap: 1em;
+}
+a {
+	text-decoration: none;
+	color: black;
+	font-weight: bold;
+}
+.appName {
+	margin-left: 1em;
+	font-size: 1.5em;
+	font-weight: bold;
+	color: rgb(246, 247, 248);
+}
+
+/* Layout for chat page: chatroom fills, sidebar on the right */
+main {
+	display: flex;
+	align-items: stretch;
+	gap: 1rem;
+	/* allow main to use available viewport height */
+	min-height: calc(100vh - 6rem);
+	box-sizing: border-box;
+}
+.chatroom {
+	flex: 1 1 auto; /* grow to fill remaining space */
+	padding: 1rem;
+	box-sizing: border-box;
+	background: transparent;
+}
+.sidebar {
+	flex: 0 0 200px; /* fixed width sidebar */
+	padding: 1rem;
+	box-sizing: border-box;
+	background-color: #717171;
+}
+.sidebar ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: 0.3rem;
+	max-height: calc(100vh - 10rem);
+	overflow: auto;
+}
+
+
+.chatroom > * {
+	margin-bottom: 1rem;
+}
+.messageInputField {
+	width: 100%;
+	padding: 0.5rem;
+	font-size: 1rem;
+	box-sizing: border-box;
+}
+.messageInput {
+	width: 100%;
+	padding: 0.5rem;
+	background-color: #FEA4A4;
+	padding: 3rem;
+}
+.messagesArea {
+	height: calc(100vh - 12rem);
+	
+	
+	padding: 1rem;
+	background-color: #fff3e5;
+}
+.messageContent {
+	margin-bottom: 0.5rem;
+	padding: 0.5rem;
+	border: 1px solid grey;
+	border-radius: 0.3em;
 }
