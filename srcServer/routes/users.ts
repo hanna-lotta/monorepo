@@ -1,10 +1,12 @@
-import { QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { QueryCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import express from 'express'
 import type { Router, Request, Response } from 'express'
 import jwt from 'jsonwebtoken';
 import { db, tableName } from '../data/dynamoDb.js';
 import { UserItem } from '../data/types.js';
 import { ItemsSchema } from '../auth/validation.js';
+import type { ErrorMessage } from '../data/types.js';
+import { PayloadSchema } from '../data/validation.js';
 
 
 
@@ -24,7 +26,7 @@ interface UserIdParam {
 router.get('/', async (req, res: Response<void | UserResponse[]>) => {
 	const command = new QueryCommand({
 		TableName: tableName,
-		KeyConditionExpression: 'pk = :value',  // USER är ett reserverat ord, kan inte skriva det direkt
+		KeyConditionExpression: 'pk = :value',  
 		ExpressionAttributeValues: {
 			':value': 'User'
 		}
@@ -42,45 +44,53 @@ router.get('/', async (req, res: Response<void | UserResponse[]>) => {
 		return
 	}
 	
-	// TODO: validera med zod att output.Items matchar UserItem-interfacet
-	// OBS! Använd aldrig "as" i produktion - validera i stället!
 	const users: UserItem[] = validateItems.data
-	//const user: UserItem | undefined = users.find((u) => u.username === validation.data.username)
 	
-
-	//const validatedItems: UserResponse[] = [];
 
 	// Frontend behöver bara användarnamn och id
 	res.send(users.map(ui => ({
 		username: ui.username,
 		userId: ui.sk.substring(5)  // id-delen av 'sk'
 	})))
-	// USER#id - hur får vi tag i id-delen av strängen? Substring, .split m.m.
+	
 })
-
-interface Payload  {
-	userId: string;
-	accessLevel: string;
-}
-
-function validateJwt(authHeader: string | undefined): Payload | null {
-	// 'Bearer: token'
-	if( !authHeader ) {
-		return null
+// Hämta en specifik användare
+router.get('/:userId', async (req: Request<UserIdParam>, res: Response<UserResponse | ErrorMessage>) => {
+	const { userId } = req.params;
+	if (!userId) {
+		res.status(400).send({ error: 'userId parameter is required' });
+		return;
 	}
-	const token: string = authHeader.substring(8)  // alternativ: slice, split
-	try {
-		const decodedPayload: Payload = jwt.verify(token, process.env.JWT_SECRET || '') as Payload
-		// TODO: validera decodedPayload
-		const payload: Payload = { userId: decodedPayload.userId, accessLevel: decodedPayload.accessLevel }
-		return payload
 
-	} catch(error) {
-		console.log('JWT verify failed: ', (error as any)?.message)
-		return null
+	const command = new QueryCommand({
+		TableName: tableName,
+		KeyConditionExpression: 'pk = :pk AND sk = :sk',
+		ExpressionAttributeValues: {
+			':pk': 'User',
+			':sk': `user#${userId}`
+		}
+	})
+	const output = await db.send(command)
+
+	if( !output.Items || output.Items.length === 0 ) {
+		res.status(404).send({ error: 'User not found' });
+		return
 	}
-}
+	const validateItems = ItemsSchema.safeParse(output.Items)
+	if (!validateItems.success) {
+		console.log('Db items did not match schema')
+		res.status(500).send({ error: 'Internal server error' });
+		return
+	}
+	const users: UserItem[] = validateItems.data
+	const user = users[0]; // borde bara vara en
 
+	res.send({
+		username: user.username,
+		userId: user.sk.substring(5)  // id-delen av 'sk'
+	})
+
+})
 
 
 export default router

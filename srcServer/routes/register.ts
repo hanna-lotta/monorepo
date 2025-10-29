@@ -6,11 +6,12 @@ import { genSalt, hash } from 'bcrypt'
 import { registerSchema } from '../auth/validation.js';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { JwtResponse, UserBody } from '../data/types.js';
+import { ErrorMessage } from '../data/types.js';
 
 const router: Router = express.Router();
 //TODO lägg till errormessage-interface
 
-router.post('/', async (req: Request<{}, JwtResponse, UserBody>, res: Response<JwtResponse | { error: string }>) => {
+router.post('/', async (req: Request<{}, JwtResponse, UserBody>, res: Response<JwtResponse | ErrorMessage>) => {
 	//validera body
 	const validation = registerSchema.safeParse(req.body);
 	if (!validation.success) {
@@ -29,14 +30,14 @@ router.post('/', async (req: Request<{}, JwtResponse, UserBody>, res: Response<J
 		Item: {
 			username: validation.data.username,
 			password: hashed,
-			accesLevel: 'user',
+			accesLevel: 'user', 
 			pk: 'User',
 			sk: 'user#' + newId
 		}
 	});
 	try {
 		const result = await db.send(command)
-		const token: string | null = createToken(newId)
+		const token: string | null = createToken(newId, 'user')
 		res.send({ success: true, token: token })
 
 	} catch(error) {

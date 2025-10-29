@@ -49,9 +49,9 @@ router.post('/', async (req: Request<{}, JwtResponse, UserBody>, res: Response<J
 		return
 	}
 	const userId = user.sk.split('#')[1]
-	const token: string = createToken(userId)
+	const token: string = createToken(userId, user.accesLevel || 'user')
 	res.send({ success: true, token: token })
-	log('User logged in:', user.username);
+	console.log('User logged in:', user.username);
 });
 
 

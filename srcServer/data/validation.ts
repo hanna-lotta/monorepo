@@ -43,4 +43,8 @@ export const ChannelSchema = z.object({
   message: z.string().min(1).max(500),
   //accesLevel: z.string().optional(),
 })	
-
+export const PayloadSchema = z.object({
+  userId: z.string(),
+  accesLevel: z.enum(['user', 'admin'])
+});
+export type Payload = z.infer<typeof PayloadSchema>;

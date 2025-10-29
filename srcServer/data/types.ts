@@ -1,3 +1,8 @@
+export interface ErrorMessage {
+  error: string;
+  issues?: unknown; 
+}
+
 export interface UserBody {
   username: string;
   password: string;
