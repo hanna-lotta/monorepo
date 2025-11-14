@@ -1,26 +1,41 @@
 import './App.css'
-import { NavLink, Outlet,  } from 'react-router'
+import { NavLink, Outlet, useNavigate } from 'react-router'
+import useUserStore from './store/userStore'
+//import Logout from './pages/Logout'
+// Users moved into the authenticated Chappy page so it's not shown on the login route
+//import Channel from './pages/Channel'
 
-//handleGetUsers()
-//TODO fixa zustand och gör handleGetUsers till en funktion så att den kan användas globalt
+
 
 function App() {
-  return (
-	<>
-	  <header className='nav'>
-		<h1 className='appName'>CHAPPY</h1>
-		<nav className='links'>
-			<NavLink to="/">Login</NavLink>
-			<NavLink to="/chappy/">Chappy</NavLink>
-			<h4 style={{ paddingRight: "10px" }}>HANNA</h4>
-			{/* {user.username} */} 
-		</nav>
-		</header>
-	  <main>
-		<Outlet />
-	  </main>
-	</>
-  )
+	const username = useUserStore((s) => s.user?.username)
+
+	const navigate = useNavigate()
+
+	return (
+		<>
+			<header className='nav'>
+				<h1 className='appName'>CHAPPY</h1>
+				<nav className='links'>
+					<NavLink to="/" style={{display: 'flex', alignItems: 'center', gap: 12}}>Login</NavLink>
+					<NavLink to="/chappy/" style={{display: 'flex', alignItems: 'center', gap: 12}}>Chappy</NavLink>
+					<div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+						{username ? (
+							<div onClick={() => { navigate('/chappy/profile') }} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+								<h4 style={{ paddingRight: 10, margin: 0 }}>{username}</h4>
+							</div>
+						) : (
+							<h4 style={{ paddingRight: 10 }}>{'Gäst'}</h4>
+						)}
+						
+					</div>
+				</nav>
+			</header>
+			<main>
+				<Outlet />
+			</main>
+		</>
+	)
 }
 
 export default App

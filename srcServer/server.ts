@@ -29,10 +29,3 @@ app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`)
 })
 
-// Log unhandled errors so we see stack traces in the console instead of silent exits.
-process.on('uncaughtException', (err) => {
-  console.error('uncaughtException:', err && err.stack ? err.stack : err);
-});
-process.on('unhandledRejection', (reason) => {
-  console.error('unhandledRejection:', reason);
-});
