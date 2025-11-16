@@ -1,0 +1,26 @@
+.profileButtons-container {
+	display: flex;
+	flex-direction: column;
+	gap: 1em;
+	margin-top: 5em;
+	width: 10em;
+	margin: 0 auto;
+	
+}
+.profileContainer {
+	width: 500px;
+	max-width: 90%;
+	margin: 0 auto;
+	color: black;
+	background-color: #D1E2D0;
+	margin-top: 5em;
+	
+}
+
+.error-message {
+	color: #d32f2f;
+	font-size: 0.9em;
+	margin-top: 1em;
+	text-align: center;
+	font-weight: 500;
+}
