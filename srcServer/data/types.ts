@@ -19,7 +19,7 @@ export interface UserItem {
 export interface JwtResponse {
 	success: boolean;
 	token?: string;  // JWT
-	username?: string;
+	username?: string; // Användarnamn för inloggad användare
 }
 export interface CreateDmBody {
 	message: string;

@@ -54,7 +54,7 @@ router.post('/', async (req: Request<{}, JwtResponse, UserBody>, res: Response<J
 		const token: string = createToken(userId, user.accesLevel || 'user')
 		//user.accesLevel || 'user' säkerställer en fallback till 'user' om fältet saknas.
 		
-		res.send({ success: true, token: token, username: user.username })
+		res.send({ success: true, token: token, username: user.username } as JwtResponse)
 		console.log('User logged in:', user.username);
 	} catch (error) {
 		console.log('login.ts db error:', (error as any)?.message)
