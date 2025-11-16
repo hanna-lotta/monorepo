@@ -2,7 +2,7 @@ import express from 'express'
 import type { Router, Request, Response } from 'express'
 import { db, tableName } from '../data/dynamoDb.js';
 import { PutCommand, QueryCommand, GetCommand, DeleteCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
-import { ChannelSchema, MetaChannelSchema, ChannelMessageRequestSchema, ChannelMessageRequest, ChannelMessageSchema, ChannelCreateRequestSchema, ChannelCreateRequest, MessageBodySchema, UserSchema } from '../data/validation.js';
+import { MetaChannelSchema, ChannelMessageDbSchema, CreateChannelSchema, CreateChannelRequest, MessageBodySchema, UserSchema } from '../data/validation.js';
 import * as z from 'zod';
 import { ScanCommand } from '@aws-sdk/lib-dynamodb'; 
 import { ErrorMessage } from '../data/types.js';
@@ -10,15 +10,6 @@ import { validateJwt } from '../data/auth.js';
 
 const router: Router = express.Router();
 
-interface Channel {
-	  pk: string;
-	  sk: string;
-	  senderId: string;
-	  senderName: string;
-	  name: string;
-	  message: string;
-	  createdAt: Date;
-}
 
 interface ChannelResponse {
   name: string;
@@ -119,7 +110,7 @@ router.get('/:channelId', async (req: Request<ChannelIdParam>, res: Response<Mes
 
     const messages: MessageResponse[] = [];
     (command.Items ?? []).forEach(item => { //om inga rader finns, returnera tom array
-      const parsed = ChannelMessageSchema.safeParse(item);
+      const parsed = ChannelMessageDbSchema.safeParse(item);
       if (parsed.success) {
         const data = parsed.data;
         messages.push({
@@ -143,8 +134,8 @@ router.get('/:channelId', async (req: Request<ChannelIdParam>, res: Response<Mes
 
 
 //skapa kanal
-router.post('/', async (req: Request<{}, ChannelResponse, ChannelCreateRequest>, res: Response<ChannelResponse | ErrorMessage>) => {
-  const bodyValidation = ChannelCreateRequestSchema.safeParse(req.body);
+router.post('/', async (req: Request<{}, ChannelResponse, CreateChannelRequest>, res: Response<ChannelResponse | ErrorMessage>) => {
+  const bodyValidation = CreateChannelSchema.safeParse(req.body);
   if (!bodyValidation.success) {
     res.status(400).send({ error: 'Invalid request body' });
     return;
