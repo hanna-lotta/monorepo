@@ -76,6 +76,11 @@ router.get('/:userA/:userB', async (req: Request, res: Response<DmBody[] | Error
     // .sort() sorterar arrayen i lexikografisk ordning(jämför strängar tecken för tecken från vänster till höger).
     // .join('#') slår ihop elementen till en enda sträng med "#" som separator.
     const pk = `dm#${convId}`; //så att ordningen på id i url inte spelar roll - det har ett konversationsId istället
+    
+    console.log('DM Debug - userA:', userA, 'userB:', userB);
+    console.log('DM Debug - tokenA:', tokenA, 'tokenB:', tokenB);
+    console.log('DM Debug - convId:', convId);
+    console.log('DM Debug - pk:', pk);
 
     const out = await db.send(new QueryCommand({
       TableName: tableName,
@@ -84,6 +89,7 @@ router.get('/:userA/:userB', async (req: Request, res: Response<DmBody[] | Error
     }));
 
     const items = out.Items || [];
+    console.log('DM Debug - Found items:', items.length, items);
 
     const validatedItems: DmBody[] = [];
     for (const it of (items || [])) {
