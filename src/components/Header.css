@@ -1,0 +1,19 @@
+nav {
+	.links {
+	display: flex;
+	flex-direction: row;
+	gap: 1em;
+}
+	.username {
+	cursor: pointer;
+	text-decoration: none;
+	color: inherit;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+	.username h4 {
+	padding-right: 10px;
+	margin: 0;
+}
+}
