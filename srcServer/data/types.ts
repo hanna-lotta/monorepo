@@ -19,9 +19,10 @@ export interface UserItem {
 export interface JwtResponse {
 	success: boolean;
 	token?: string;  // JWT
+	username?: string;
 }
 export interface CreateDmBody {
-  message: string;
-  senderId: string;
-  recieverId: string; 
+	message: string;
+	senderId?: string; // optional for POST: server derives from token
+	recieverId: string;
 }
