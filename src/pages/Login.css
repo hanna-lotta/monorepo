@@ -1,0 +1,84 @@
+
+.login {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid rgb(112, 112, 112);
+	max-width: 40em;
+	border-radius: 0.3em;
+	box-shadow: 0 4px 8px rgba(0, 0, 0.2, 0.6);
+	margin: 5em auto; 
+	background-color: white; 
+	color: black; 
+
+	.form {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 1em;
+}
+	.label-container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 100%;
+}
+
+	.form label {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	
+	
+}
+	.form input {
+	display: block;
+	margin: 0 auto;
+	width: 20em;
+	max-width: 100%;
+	box-sizing: border-box;
+	margin-top: 0.5em;
+	padding: 0.4em;
+	margin-bottom: 0.2em;
+}
+	.loginbutton {
+	border: 1px solid grey;
+	padding: 0.6em 1.6em;
+	margin: 1em;
+	margin-top: 2.5em;
+	background-color: rgb(99, 167, 160);
+}
+	.registerbutton {
+	border: 1px solid grey;
+	background-color: rgb(99, 167, 160);
+	margin-bottom: 1em;
+}
+	.guestbutton {
+	border: 1px solid grey;
+	background-color: rgb(99, 167, 160);
+	margin-bottom: 0.5em;
+}
+	.mustHave {
+	font-size: 0.8em;
+	align-self: flex-start;
+	padding-left: 2em;
+}
+	h2 {
+	padding-top: 1em;
+}
+.error-text {
+	height: 1.6em;
+	color: rgb(243, 8, 8);
+	font-size: 0.9em;
+	align-self: flex-start;
+	padding-left: 0.3em;
+	display: block; /* Säkerställ att den tar plats */
+}
+.error-text.hidden {
+	visibility: hidden;
+}
+.error {
+	border: 1px solid rgb(243, 8, 8);
+}
+}

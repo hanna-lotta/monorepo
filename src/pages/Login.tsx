@@ -1,28 +1,21 @@
 import { useState } from 'react'
 import '../App.css'
-import { AuthSchema, RegisterResponseSchema } from '../data/validation'
+import { RegisterResponseSchema } from '../data/validation'
 import { useNavigate } from 'react-router'
 import useUserStore from '../store/userStore'
+import './Login.css'
 
-//dubbel?_flytta
+
 interface FormData {
 	username: string
 	password: string
 }
-/*
-interface Touched {
-username: boolean
-password: boolean
-}
-*/
-
 
 const Login = () => {
 	const [formData, setFormData] = useState<FormData>({username: '', password: ''})
-	//const [authErrorMessage, setAuthErrorMessage] = useState<string>('')
+	const [errors, setErrors] = useState<{username?: string, password?: string, general?: string}>({})
 	
-	//const [touched, setTouched] = useState<Touched>({username: false, password: false}) 
-	const [errorMessage, setErrorMessage] = useState<string | null>(null)
+	const [touched, setTouched] = useState<{username: boolean, password: boolean}>({username: false, password: false}) 
 	
 	const navigate = useNavigate();
 	
@@ -34,15 +27,34 @@ const Login = () => {
 	
 	const LS_KEY = 'jwt'
 	
-	
+	const ValidateForm = () => {
+		const newErrors: {username?: string; password?: string} = {}
+
+		if (!formData.username) {
+			newErrors.username = 'Avändarnamn krävs'
+		} else if (formData.username.length < 3) {
+			newErrors.username = 'Avändarnamn måste vara minst 3 tecken'
+		}
+
+		if (!formData.password) {
+			newErrors.password = 'Lösenord krävs'
+		} else if (formData.password.length < 6) {
+			newErrors.password = 'Lösenord måste vara minst 6 tecken'
+		}
+		setErrors(newErrors)
+		return Object.keys(newErrors).length === 0 //kollar om newErrors är ett tomt objekt = inga fel = formuläret är OK!
+	}
+
 	const handleSubmitLogin = async () => {
+		// Markera alla fält som touched vid submit
+        setTouched({username: true, password: true})
 		
-		const parsed = AuthSchema.safeParse(formData)
-		if (!parsed.success) {
-			setErrorMessage('Please fill in valid username and password')
+		if (!ValidateForm()) {
 			return
 		}
-		setErrorMessage(null) // Rensa tidigare fel innan nätverksanropet
+
+		setErrors({}) // Rensa tidigare fel innan nätverksanropet(objekt)
+
 		try {
 			const response = await fetch('/api/login', {
 				method: 'POST',
@@ -53,25 +65,25 @@ const Login = () => {
 			})
 
 			if (!response.ok) {
-				setErrorMessage(`Server error: ${response.status}`)
+				console.log(`Server error: ${response.status}`)
 				return
 			}
 
 			const data = await response.json()
 			const validate = RegisterResponseSchema.safeParse(data)
 			if (!validate.success) {
-				setErrorMessage('Server returned an unexpected response')
+				console.log('Server returned an unexpected response')
 				return
 			}
 
 			if (data.success) {
 				const jwt: string | undefined = data.token
 				if (!jwt) {
-					setErrorMessage('Server did not return a token')
+					console.log('Server did not return a token')
 					return
 				}
 				localStorage.setItem(LS_KEY, jwt)
-				// Server returns username in login response; save it so header can display it
+				// Servern returnerar användarnamn i login-svaret; spara det så headern kan visa det
 				if (data.username) {
 					localStorage.setItem('username', data.username)
 					setUser({ username: data.username })
@@ -79,23 +91,24 @@ const Login = () => {
 				// Navigera till Chappy efter lyckad login
 				navigate('/chappy/')
 			} else {
-				setErrorMessage('Login failed')
+				console.log('Login failed')
 			}
 		} catch (err) {
-			setErrorMessage('Network or server error')
+			console.log('Network or server error')
 		}
 	}
 	
 	const handleSubmitRegister = async () => {
-		// Validera lokalt innan request
-		const parsed = AuthSchema.safeParse(formData)
-		if (!parsed.success) {
-			setErrorMessage('Please fill in valid username and password')
+		// Markera alla fält som touched vid submit
+        setTouched({username: true, password: true})
+
+		if (!ValidateForm()) {
 			return
 		}
+
 		// Rensa tidigare fel innan nätverksanropet
-		setErrorMessage(null)
-		// TODO: gör register-knappen disabled tills denna funktion är färdig
+		setErrors({})
+		
 		try {
 			const response = await fetch('/api/register', {
 				method: 'POST',
@@ -106,23 +119,17 @@ const Login = () => {
 			})
 
 			if (!response.ok) {
-				setErrorMessage(`Server error: ${response.status}`)
+				console.log(`Server error: ${response.status}`)
 				return
 			}
 
 			const data = await response.json()
 
-			// Validera svaret från servern med Zod
-			const validate = RegisterResponseSchema.safeParse(data)
-			if (!validate.success) {
-				setErrorMessage('Server returned an unexpected response')
-				return
-			}
 
 			if (data.success) {
 				const jwt: string | undefined = data.token
 				if (!jwt) {
-					setErrorMessage('Server did not return a token')
+					console.log('Server did not return a token')
 					return
 				}
 				localStorage.setItem(LS_KEY, jwt)
@@ -134,39 +141,67 @@ const Login = () => {
 				// Navigera till Chappy efter lyckad registrering
 				navigate('/chappy/')
 			} else {
-				setErrorMessage('Registration failed')
+				console.log('Registration failed')
 			}
 		} catch (err) {
-			setErrorMessage('Network or server error')
+			console.log('Network or server error')
 		}
 	}
 	
 	return (
-		<div className="login-form">
+		<div className="login">
 		<h2>Logga in</h2>
-		<form className='form' onSubmit={(e) => { e.preventDefault(); handleSubmitLogin(); }}>
+		<form className='form' onSubmit={(e) => { e.preventDefault(); handleSubmitLogin(); }}> 
 		<p className='mustHave'>* obligatoriskt fält</p>
+		<div className="label-container">
 		<label>
 		Användarnamn: *
 		<input type="text" name="username"
 		value={formData.username}
-		onChange={event => setFormData({...formData, username: event.target.value})}
+		onChange={event => {
+			setFormData({...formData, username: event.target.value})
+			// Validera direkt om fältet redan är touched
+		if (touched.username) {
+			ValidateForm()
+		}
+		}}
+		onBlur={() => {
+			setTouched(prev => ({...prev, username: true}))
+			ValidateForm()
+		}}
+		className={errors.username && touched.username ? 'error' : ''}
 		/>
+		<span className={`error-text ${!(errors.username && touched.username) ? 'hidden' : ''}`}>
+			{errors.username}
+		</span>
 		</label>
 		
 		<label>
 		Lösenord: *
-		<input type="password" name="password" 
+		<input type="password" 
+		name="password" 
 		value={formData.password}
-		onChange={event => setFormData({...formData, password: event.target.value})}
-		
+		onChange={event => {
+			setFormData({...formData, password: event.target.value})
+		    if (touched.password) {
+				ValidateForm()
+			}
+		}}
+		onBlur={() => {
+			setTouched(prev => ({...prev, password: true}))
+			ValidateForm()
+		}}
+		className={errors.password && touched.password ? 'error' : ''}
 		/>
+		<span className={`error-text ${!(errors.password && touched.password) ? 'hidden' : ''}`}>
+			{errors.password}
+		</span>
 		</label>
-		
+		</div>
 		<button className='loginbutton' type="submit">Logga in</button>
 		<button className='registerbutton' type="button" onClick={handleSubmitRegister}>Registrera</button>
 		<button className='guestbutton' onClick={handleGoToChappy}>Besök Chappy som gäst</button>
-		{errorMessage && <p className='error'>{errorMessage}</p>}
+		
 		</form>
 		</div>
 	)
