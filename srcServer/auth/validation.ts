@@ -1,15 +1,15 @@
 import * as z from "zod"
 
 export const registerSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters long"),
-  password: z.string().min(6, "Password must be at least 6 characters long"),
+  username: z.string().min(3),
+  password: z.string().min(6),
 })
 
 export type RegisterSchema = z.infer<typeof registerSchema>
 
 export const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  username: z.string().min(1),
+  password: z.string().min(1),
 })
 
 export type LoginSchema = z.infer<typeof loginSchema>
@@ -20,10 +20,10 @@ export const ItemSchema = z.object({
   username: z.string(),
   password: z.string(),
   accesLevel: z.string(),
-  //isLoggedIn: z.boolean(),
 })
 
-export const ItemsSchema = z.array(ItemSchema)
+export const ItemsSchema = z.array(ItemSchema) //z.array(ItemSchema)
+//Skapar ett Zod-schema som beskriver "en array där varje element matchar ItemSchema". ItemSchema är ett tidigare definierat Zod‑schema (för ett enskilt user/item).
 
 export type ItemSchema = z.infer<typeof ItemSchema>
 export type ItemsSchema = z.infer<typeof ItemsSchema>
