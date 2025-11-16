@@ -1,0 +1,138 @@
+
+.chappy-main {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch; 
+	justify-content: flex-start;
+	padding: 0; 
+	overflow: hidden;
+	width: 100%; 
+	background-color: #D1E2D0;
+}
+.chappy-container {
+	display: flex;
+	height: 800px;
+	width: 100%;
+	flex: 1;
+	max-width: 1200px;
+	margin: 0 auto;
+}
+
+.DMchatroom {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: calc(100vh - 6rem); 
+	box-sizing: border-box;
+	background: transparent;
+}
+
+.messageInputField {
+	width: 100%;
+	padding: 0.5rem;
+	font-size: 1rem;
+	box-sizing: border-box;
+}
+
+.messageInput {
+	width: 100%;
+	background-color: #93B489;
+	padding: 0.5rem;
+	margin-top: auto;
+	box-sizing: border-box; 
+}
+
+.messagesArea {
+	height: calc(100vh - 12rem);
+	color: black;
+	padding: 1rem;
+	background-color: #D1E2D0;
+}
+
+.channelContainer {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: calc(100vh - 6rem); 
+	box-sizing: border-box;
+}
+
+.channelMessagesArea {
+	flex: 1;
+	min-width: 300px;
+	max-width: none;
+}
+
+.messageContent {
+	margin-bottom: 0.5rem;
+	padding: 0.5rem;
+}
+.sidebar {
+	flex: 0 0 200px; /* fixed width sidebar */
+	padding: 1rem;
+	box-sizing: border-box;
+	background-color: #A2B99C;
+}
+
+.sidebar ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: 0.3rem;
+	max-height: calc(100vh - 10rem);
+	overflow: auto;
+}
+
+.allChannels {
+	margin: 0.3em;
+	padding: 0.3em;
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	color: rgb(119, 75, 0);
+}
+
+ul {
+	display: flex;
+	flex-direction: column;
+	list-style: none;
+	align-items: stretch;
+	justify-content: center;
+	flex-grow: 1;
+	padding-left: 0;
+	margin: 0;
+}
+
+.allUsers {
+	margin: 0.3em;
+	padding: 0.3em;
+	color: rgb(119, 75, 0);
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+}
+
+.displayName {
+	margin-left: 0.5em;
+	color: rgb(10, 10, 10);
+	font-weight: bold;
+	margin: 0.3em;
+	font-size: 1.1em;
+}
+
+.createChannelButton {
+	border: none;
+	padding: 0.5em 1em;
+	border-radius: 4px;
+	cursor: pointer;
+	margin-top: 3em;
+}
+
+.createChannelButton:hover {
+	background-color: rgb(163, 111, 15);
+}

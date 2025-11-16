@@ -2,7 +2,7 @@ import { Outlet } from 'react-router'
 import Users from './UsersList'
 import ChannelsList from './ChannelsList'
 import '../App.css'
-import CreateChannel from './CreateChannel'
+import './Chappy.css'
 
 
 
@@ -10,20 +10,20 @@ const Chappy = () => {
    
 
     return (
-        <div style={{ display: 'flex', height: '100%', }}>
+        <div className="chappy-container" >
             {/* Left sidebar - user list */}
-            <aside className='sidebar' style={{ padding: 12 }}>
+            <aside className='sidebar'>
                 <h4>Kanaler</h4>
                 <ChannelsList />
             </aside>
 
             {/* Center content - the routable area. */}
-            <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <div className="chappy-main" >
                 <Outlet />
-            </main>
+            </div>
 
             {/* Right sidebar - user list */}
-            <aside style={{ backgroundColor: '#0a0f0bff', width: 100, minWidth: 100, borderLeft: '1px solid var(--border)', padding: 12 }}>
+            <aside className='sidebar'>
                 <Users />
             </aside>
         </div>
