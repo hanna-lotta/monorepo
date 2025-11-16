@@ -2,7 +2,7 @@ import express from 'express'
 import type { Router, Request, Response } from 'express'
 import { db, tableName } from '../data/dynamoDb.js';
 import { PutCommand, QueryCommand, GetCommand, DeleteCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
-import { ChannelSchema, MetaChannelSchema, ChannelMessageRequestSchema, ChannelMessageRequest, ChannelMessageSchema, ChannelCreateRequestSchema, ChannelCreateRequest, MessageBodySchema } from '../data/validation.js';
+import { ChannelSchema, MetaChannelSchema, ChannelMessageRequestSchema, ChannelMessageRequest, ChannelMessageSchema, ChannelCreateRequestSchema, ChannelCreateRequest, MessageBodySchema, UserSchema } from '../data/validation.js';
 import * as z from 'zod';
 import { ScanCommand } from '@aws-sdk/lib-dynamodb'; 
 import { ErrorMessage } from '../data/types.js';
@@ -18,16 +18,6 @@ interface Channel {
 	  name: string;
 	  message: string;
 	  createdAt: Date;
-	//accesLevel?: string;
-}
-
-interface ChannelBody {
-  senderId: string;
-  senderName: string;
-  name: string;
-  message: string;
-  createdAt: Date;
- 
 }
 
 interface ChannelResponse {
@@ -68,7 +58,6 @@ router.get('/', async (req: Request, res: Response<ChannelResponse[] | ErrorMess
     return res.status(200).send(channels);
 
   } catch (err) {
-    console.error('Error listing channels:', (err as any)?.stack || (err as any)?.message || err)
     res.status(500).send({ error: 'Internal server error' });
 	return;
   }
@@ -120,7 +109,7 @@ router.get('/:channelId', async (req: Request<ChannelIdParam>, res: Response<Mes
       }
     }
 
-    const out = await db.send(new QueryCommand({
+    const command = await db.send(new QueryCommand({
       TableName: tableName,
       KeyConditionExpression: 'pk = :pk AND begins_with(sk, :msg)',
       ExpressionAttributeValues: { ':pk': pk, ':msg': 'message#' },
@@ -129,7 +118,7 @@ router.get('/:channelId', async (req: Request<ChannelIdParam>, res: Response<Mes
     }));
 
     const messages: MessageResponse[] = [];
-    (out.Items ?? []).forEach(item => { //om inga rader finns, returnera tom array
+    (command.Items ?? []).forEach(item => { //om inga rader finns, returnera tom array
       const parsed = ChannelMessageSchema.safeParse(item);
       if (parsed.success) {
         const data = parsed.data;
@@ -147,15 +136,12 @@ router.get('/:channelId', async (req: Request<ChannelIdParam>, res: Response<Mes
 
     return res.status(200).send(messages);
   } catch (err) {
-    console.error('Error fetching channel messages:', (err as any)?.stack || (err as any)?.message || err)
-   
     res.status(500).send({ error: 'Internal server error' });
 	return;
   }
 });
 
 
-//TODO autentisera jwt med middleware istället
 //skapa kanal
 router.post('/', async (req: Request<{}, ChannelResponse, ChannelCreateRequest>, res: Response<ChannelResponse | ErrorMessage>) => {
   const bodyValidation = ChannelCreateRequestSchema.safeParse(req.body);
@@ -171,13 +157,12 @@ router.post('/', async (req: Request<{}, ChannelResponse, ChannelCreateRequest>,
   return;
 }
 // skapa en "rå" userId utan prefix för jämförelser mot URL/body‑parametrar.
-const { userId: tokenUserId, accesLevel } = maybePayload;
+const { userId: tokenUserId } = maybePayload;
 const userIdFromToken = tokenUserId.startsWith('user#')
   ? tokenUserId.slice(5)
   : String(tokenUserId);
 
-// Säker praxis: använd token‑user som creator. Vi tar creatorUserId från token och
-// förlitar oss inte på klient‑sända senderId (klienten bör inte skicka senderId i body).
+// Säker praxis: använd token‑user som creator. 
 const creatorUserId = userIdFromToken;
 
   const { senderName, name, message, isOpen } = bodyValidation.data;
@@ -234,9 +219,6 @@ const messageItem = {
 });
 
 
-//TODO skapa delete kanal med autentisering , delete message också
-//TODO Logga in som admin
-
 interface MessageBody {
   senderName?: string;
   message: string;
@@ -268,7 +250,6 @@ router.post('/:channelId/message', async (req: Request<ChannelIdParam, MessageRe
 
     const metaParse = MetaChannelSchema.safeParse(metaOut.Item);
     if (!metaParse.success) {
-      console.log('Channel META failed validation:', JSON.stringify(metaOut.Item, null, 2));
       res.status(500).send({ error: 'Channel metadata invalid' });
       return;
     }
@@ -277,33 +258,53 @@ router.post('/:channelId/message', async (req: Request<ChannelIdParam, MessageRe
 
       const bodyValidation = MessageBodySchema.safeParse(req.body);
       if (!bodyValidation.success) {
-        console.log('Channel message create failed validation:');
         res.status(400).send({ error: 'Invalid request body' });
         return;
       }
-	  // Deklarerar variabel för avsändar-id som ska sparas i DB.
-      let senderId: string;
-      
-	  // : alias/rename när du destrukturerar ett objekt — det tar värdet från egenskapen senderName och tilldelar det till en lokal variabel som heter maybeSenderName.
       const { senderName: maybeSenderName, message } = bodyValidation.data;
-	  // Om klienten inte skickade senderName, skapa ett generiskt guest-displaynamn Guest-<kort-uuid>.
-      const senderName = maybeSenderName || `Guest-${crypto.randomUUID().slice(0, 8)}`; // tar de första 8 tecknen av UUID:n, t.ex. 'd3b07384'.
-  
-      if (isOpen) {
-        // Öppen kanal: tillåt gästposter
-        senderId = `guest#${crypto.randomUUID()}`; //tillåt gästpost — skapa ett senderId
+
+      // Kolla om användaren är inloggad
+      const maybePayload = validateJwt(req.headers['authorization']);
+      
+      let senderId: string;
+      let senderName: string;
+      
+      if (maybePayload) {
+        // Inloggad användare - hämta riktigt namn
+        const { userId: tokenUserId } = maybePayload;
+        senderId = tokenUserId.startsWith('user#') ? tokenUserId : `user#${tokenUserId}`;
+        
+        // Hämta användarnamn från databasen
+        let actualUsername: string | undefined;
+        try {
+          const userRes = await db.send(new GetCommand({
+            TableName: tableName,
+            Key: { pk: 'User', sk: senderId }
+          }));
+          
+          if (userRes.Item) {
+            const userValidation = UserSchema.safeParse(userRes.Item);
+            if (userValidation.success) {
+              actualUsername = userValidation.data.username;
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch username:', err);
+        }
+        
+        senderName = actualUsername || maybeSenderName || 'Inloggad användare';
+        
       } else {
-        // Låst kanal: kräver autentiserad användare
-        const maybePayload = validateJwt(req.headers['authorization']);
-        if (!maybePayload) {
-          res.sendStatus(401);
+        // Inte inloggad
+        if (!isOpen) {
+          res.sendStatus(401); // Låst kanal kräver inloggning
           return;
         }
-		//Extraherar userId från JWT-payload.
-        const { userId: tokenUserId } = maybePayload;
-        senderId = ( tokenUserId.startsWith('user#')) ? tokenUserId.slice(5) : String(tokenUserId);
+        // Gäst i öppen kanal
+        senderId = `guest#${crypto.randomUUID()}`;
+        senderName = maybeSenderName || `Guest-${crypto.randomUUID().slice(0, 8)}`;
       }
-	  
+
       const createdAt = new Date().toISOString();
       const sk = `message#${Date.now()}#${crypto.randomUUID()}`;
 
@@ -330,42 +331,7 @@ router.post('/:channelId/message', async (req: Request<ChannelIdParam, MessageRe
 
 //TODO delete channel med alla meddelanden i kanal
 
-// Olika strategier för att radera alla meddelanden i en kanal:
-//Skicka en Scan för att hämta alla meddelanden i kanalen och sedan radera dem en och en med DeleteCommand i en loop (parallellt med Promise.all för prestanda).
-//Pro: enkel att implementera.
-//Con: många anrop om kanalen har många meddelanden, vilket kan vara ineffektivt och dyrt.
 
-
-//BatchWrite - 
-// BatchWriteCommand kan skicka upp till 25 "requests" per anrop (PutRequest eller DeleteRequest).
-//Det är inte atomiskt — en batch kan delvis lyckas.
-//DeleteItem (enskilda DeleteCommand) i parallel/konkurrens‑kontrollerad loop
-//TransactWrite (transaktion)
-//Om du måste garantera att META och ett par meddelanden tas bort atomiskt: använd TransactWriteCommand.
-//Pro: atomisk (all‑or‑nothing), kan innehålla condition checks.
-//Con: max 25 transaktioner per anrop, högre latens/kostnad.
-//Fördelar: atomiskt (all-or-nothing), stöd för condition checks.
-//Nackdelar: max 25 items per transaktion, högre kostnad/latency.
-//När: väldigt få items och du behöver atomicitet (sällsynt för att radera hela kanal).
 export default router;
 
 
-
-
-
-
-
-/* TODO Du använder klientens createdAt som fallback; bättre sätt timestampen på servern.
-TODO Byt så att metaItem.creatorUserId = creatorUserId (inte senderId).
-Sätt createdAt server‑side: const createdAt = new Date().toISOString() (ignorera client value).
-I svaret returnera creatorUserId (inte senderId). -klart 
-TODO Byt så att metaItem.creatorUserId = creatorUserId (inte senderId).
-Sätt createdAt server‑side: const createdAt = new Date().toISOString() (ignorera client value).
-I svaret returnera creatorUserId (inte senderId).
-TODO När du redan validerat body och JWT: använd det namn klienten skickade (body.senderName) i messageItem.
-Risk: klienten kan skriva vilket namn som helst (spoofat display‑name). Om det är ok i din app (t.ex. chatt där displayname är fritt), det är enklast.
-Strikt variant — slå upp username på servern baserat på tokenUserId (säkrast)
-Du hämtar username från User‑item i DB (GetCommand) med nyckeln pk: 'User', sk: user#${userIdFromToken}.
-Fördel: du garanterar att visade namn matchar registrerad username eller profildata — ingen spoofing.
-Nackdel: ett extra DB‑anrop per meddelande/kanalskapande (men en GetItem är billig och snabbt).
-*/
