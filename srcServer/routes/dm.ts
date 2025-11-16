@@ -1,8 +1,8 @@
 import express from 'express'
 import type { Router, Request, Response } from 'express'
 import { db, tableName } from '../data/dynamoDb.js';
-import { PutCommand, QueryCommand, GetCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
-import { DmSchema, PayloadSchema, PostDmSchema, UserSchema } from '../data/validation.js';
+import { PutCommand, QueryCommand, GetCommand, DeleteCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DmSchema, PayloadSchema, PostDmSchema, UserSchema, DmDb } from '../data/validation.js';
 import { CreateDmBody } from '../data/types.js';
 import jwt from 'jsonwebtoken';
 import type { ErrorMessage } from '../data/types.js';
@@ -37,20 +37,13 @@ function validateJwt(authHeader: string | undefined): Payload | null {
     console.log('Decoded JWT payload did not match schema');
     return null;
   } 
- 
   return validatePayload.data;
-
-  /*
-  const payload: Payload = { userId: decodedPayload.userId, accessLevel: decodedPayload.accessLevel }
-		return payload
-*/
 
   } catch(error) {
     console.log('JWT verify failed: ', (error as any)?.message)
     return null
   }
 }
-
 
 // DM - TODO kolla om användaren är inloggad
 router.get('/:userA/:userB', async (req: Request, res: Response<DmBody[] | ErrorMessage>) => {
@@ -59,7 +52,7 @@ router.get('/:userA/:userB', async (req: Request, res: Response<DmBody[] | Error
 	res.status(400).send({ error: 'Both userA and userB parameters are required' });
 	return
   }
-
+  
   const maybePayload: Payload | null = validateJwt(req.headers['authorization'])
 	if( !maybePayload ) {
 		console.log('Gick inte att validera JWT')
@@ -67,19 +60,21 @@ router.get('/:userA/:userB', async (req: Request, res: Response<DmBody[] | Error
 		return
 	}
 
-  const { userId, accesLevel } = maybePayload
+  const { userId: tokenUserId, accesLevel } = maybePayload
   // Man får lov att se konversationen om man är en av deltagarna eller har accessLevel admin
-  const normalizedUserId = userId.startsWith('user#') ? userId.slice(5) : userId;
-  if( normalizedUserId !== userA && normalizedUserId !== userB && accesLevel !== 'admin' ) {
-    console.log('Inte tillräcklig access level. ', userId, accesLevel)
+  const userIdFromToken = tokenUserId.startsWith('user#') ? tokenUserId.slice(5) : tokenUserId;
+  if( userIdFromToken !== userA && userIdFromToken !== userB && accesLevel !== 'admin' ) {
+    console.log('Inte tillräcklig access level. ', userIdFromToken, accesLevel)
     res.sendStatus(401)
     return
   }
   try {
-    // matcha 'dm#user#2#user#3'
+    // matcha 'dm#user#2#user#3'  
     const tokenA = `user#${userA}`;
     const tokenB = `user#${userB}`;
-    const convId = [tokenA, tokenB].sort().join('#');
+    const convId = [tokenA, tokenB].sort().join('#'); //[tokenA, tokenB] skapar en array med de två strängarna (t.ex. "user#1e6..." och "user#2a3...").
+    // .sort() sorterar arrayen i lexikografisk ordning(jämför strängar tecken för tecken från vänster till höger).
+    // .join('#') slår ihop elementen till en enda sträng med "#" som separator.
     const pk = `dm#${convId}`; //så att ordningen på id i url inte spelar roll - det har ett konversationsId istället
 
     const out = await db.send(new QueryCommand({
@@ -106,29 +101,44 @@ router.get('/:userA/:userB', async (req: Request, res: Response<DmBody[] | Error
 
 
 
-//DM - TODO kolla om användaren är inloggad
+//DM 
 router.post('/', async (req: Request<{}, {}, CreateDmBody>, res: Response<unknown | ErrorMessage>) => {
   const validation = PostDmSchema.safeParse(req.body);
   if (!validation.success) {
     res.status(400).send({ error: 'Invalid request body' });
-	return
+    return
   }
-  const { message, senderId, recieverId } = validation.data;
+  
+  const { message, recieverId } = validation.data;
 
+  const maybePayload: Payload | null = validateJwt(req.headers['authorization'])
+	if( !maybePayload ) {
+		console.log('Gick inte att validera JWT')
+		res.sendStatus(401)
+		return
+	}
+	
+    const { userId: tokenUserId, accesLevel } = maybePayload;
+   
+
+    const senderIdFromToken = tokenUserId.startsWith('user#') ? tokenUserId : `user#${tokenUserId}`; //if sats istället
+    //skapa en canonical senderId i formatet som sparas i databasen (t.ex. "user#123").
+    const receiverIdFromBody = recieverId.startsWith('user#') ? recieverId : `user#${recieverId}`;
+	// Normalisera receiver så att den också har 'user#' prefix för att bygga PK
   try {
     // Hämta username från User item (pk='User', sk=senderId)
     const getUser = await db.send(new GetCommand({ 
-		TableName: tableName, 
-		Key: { 
-			pk: 'User', 
-			sk: senderId 
-		} 
-	}))
-	if (!getUser?.Item) {
-	  res.status(400).send({ error: 'Sender user not found' });
-	  return
-	}
-	const userValidation = UserSchema.safeParse(getUser.Item);
+        TableName: tableName, 
+        Key: { 
+            pk: 'User', 
+            sk: senderIdFromToken 
+        } 
+    }))
+    if (!getUser?.Item) {
+      res.status(400).send({ error: 'Sender user not found' });
+      return
+    }
+    const userValidation = UserSchema.safeParse(getUser.Item);
 	if (!userValidation.success) {
 	  res.status(400).send({ error: 'Invalid user data' });
 	  return
@@ -138,83 +148,44 @@ router.post('/', async (req: Request<{}, {}, CreateDmBody>, res: Response<unknow
     const messageId = crypto.randomUUID();
     const now = new Date().toISOString();
     const putItem = {
-      pk: `dm#${[senderId, recieverId].sort().join('#')}`,
+      pk: `dm#${[senderIdFromToken, receiverIdFromBody].sort().join('#')}`,
       sk: `message#${now}#${messageId}`,
-      senderId,
-      recieverId,
+      messageId,
+      senderId: senderIdFromToken,
+      recieverId: receiverIdFromBody, 
       senderName,
       message,
       createdAt: now,
     };
 
-    await db.send(new PutCommand({ TableName: tableName, Item: putItem }));
+    await db.send(new PutCommand({ 
+		TableName: tableName, 
+		Item: putItem 
+	}));
     return res.status(201).send(putItem);
+	
   } catch (error) {
     console.error('Error creating DM:', error);
     return res.status(500).send({ error: 'Internal server error' });
   }
 });
-/*
-await db.send(new UpdateCommand({
-  TableName: tableName,
-  Key: { pk: it.pk, sk: it.sk },
-  UpdateExpression: 'SET senderName = :name',
-  ExpressionAttributeValues: { ':name': username }
-}));
-Fortsätt spara senderName vid skrivtid (du har redan implementerat detta i din POST)
-Det räcker att du alltid lägger in senderName när du skapar nya DM‑poster. Då behöver du bara backfilla historiken en gång.*/
 
-interface DeleteDmBody {
-  senderId: string;
-  recieverId: string;
-  // prefer messageSk (full sk) from the client; createdAt+messageId can be used as a fallback
-  messageSk: string;
-  createdAt: string;
-  messageId: string;
-  senderName?: string
+/*Fortsätt spara senderName vid skrivtid.*/
+
+export interface Dm {
+	
+	sk?: string;
+	senderId: string;
+	recieverId: string;
+	message: string;
+	createdAt: Date;
+	messageId?: string;
+
 }
 
 
-router.delete('/', async (req: Request<{}, {}, DeleteDmBody>, res: Response<DmBody | ErrorMessage>) => {
-  const { senderId, recieverId, createdAt, messageSk, messageId, senderName } = req.body;
-  if (!senderId || !recieverId || (!messageSk && !(createdAt && messageId))) {
-    return res.status(400).send({ error: 'Missing required fields. Provide senderId, recieverId and messageSk (preferred) or createdAt+messageId (fallback).' });
-  }
 
-  try {
-    const pk = `dm#${[senderId, recieverId].sort().join('#')}`;
-    // use provided messageSk if present, otherwise build from createdAt+messageId
-    const skToDelete = messageSk ? messageSk : `message#${createdAt}#${messageId}`;
-
-    const deleteResult = await db.send(new DeleteCommand({
-      TableName: tableName,
-      Key: { 
-        pk, 
-        sk: skToDelete
-      },
-      ReturnValues: 'ALL_OLD'
-    }))
-    if (deleteResult.Attributes) {
-      const validation = DmSchema.safeParse(deleteResult.Attributes)
-      if (validation.success) {
-        const deleteMessage = validation.data
-        res.status(200).send(deleteMessage)
-      } else {
-        // include validation issues to aid debugging (safe in dev); don't leak secrets in production
-        console.error('DM delete: DB item failed validation', validation.error);
-        res.status(500).send({ error: 'Database validation failed', issues: validation.error.issues })	
-      }
-    } else { 
-      res.status(404).send({ error: 'Message not found' })
-    }
-    
-  } catch (error) {
-    console.error('Error deleting DM:', error);
-    res.status(500).send({ error: 'Failed to delete message'})
-  }
-
-});
-
+  
 
 
 
